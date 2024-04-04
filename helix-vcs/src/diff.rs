@@ -259,6 +259,24 @@ impl Diff<'_> {
         }
     }
 
+    /// Iterates over all hunks that overlap with the given line range.
+    pub fn hunks_in_range(&self, start_line: u32, end_line: u32) -> impl Iterator<Item = &Hunk> {
+        let hunk_range = if self.inverted {
+            |hunk: &Hunk| hunk.before.clone()
+        } else {
+            |hunk: &Hunk| hunk.after.clone()
+        };
+
+        let first = self
+            .diff
+            .hunks
+            .partition_point(|hunk| hunk_range(hunk).end < start_line);
+
+        self.diff.hunks[first..]
+            .iter()
+            .take_while(move |hunk| hunk_range(hunk).start <= end_line)
+    }
+
     pub fn hunk_at(&self, line: u32, include_removal: bool) -> Option<u32> {
         let hunk_range = if self.inverted {
             |hunk: &Hunk| hunk.before.clone()
